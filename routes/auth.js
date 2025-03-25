@@ -9,34 +9,39 @@ const router = express.Router()
 // @access  Public
 router.post("/register", async (req, res) => {
   try {
-    const { name, email, password } = req.body
+    const { name, email, username, password } = req.body;
 
-    // Check if user already exists
-    let user = await User.findOne({ email })
+    // Validate required fields
+    if (!name || !email || !username || !password) {
+      return res.status(400).json({ name: name, email: email, username: username, password: password, message: "Please enter all fields" });
+    }
+
+    // Check if username or email already exists
+    let user = await User.findOne({ $or: [{ email }, { username }] });
     if (user) {
-      return res.status(400).json({ message: "User already exists" })
+      return res.status(400).json({ message: "Username or email already exists" });
     }
 
     // Create new user
     user = new User({
       name,
       email,
+      username,
       password,
-    })
-
-    await user.save()
+    });
+    await user.save();
 
     // Return user without password
     const userResponse = {
       _id: user._id,
       name: user.name,
       email: user.email,
-    }
-
-    res.status(201).json({ message: "User registered successfully", user: userResponse })
+      username: user.username,
+    };
+    res.status(201).json({ message: "User registered successfully", user: userResponse });
   } catch (error) {
-    console.error("Registration error:", error)
-    res.status(500).json({ message: "Server error" })
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 })
 
